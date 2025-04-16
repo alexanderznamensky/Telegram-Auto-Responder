@@ -15,6 +15,7 @@
 
 You will need to register your existing account of Telegram at https://my.telegram.org/:
 ![image](https://github.com/user-attachments/assets/f227a556-5407-4dd7-b11b-3d2829be0cb1)
+
 Then you input telephone number and receive auth code in yout Telegram App.
 After entering the code and successful authorization, you just need to choose API development tools and copy api_id and api_hash.
 
