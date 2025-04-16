@@ -1,0 +1,161 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Telegram API Credentials",
+        "description": "Enter your Telegram API ID and API Hash",
+        "data": {
+          "api_id": "API ID",
+          "api_hash": "API Hash"
+        }
+      },
+      "phone": {
+        "title": "Phone Number",
+        "description": "Enter your phone number in international format",
+        "data": {
+          "phone": "Phone number"
+        }
+      },
+      "code": {
+        "title": "Verification Code",
+        "description": "Enter the code sent to {phone}",
+        "data": {
+          "code": "Verification code"
+        }
+      },
+      "password": {
+        "title": "Two-Step Verification",
+        "description": "Enter your two-step verification password",
+        "data": {
+          "password": "Password"
+        }
+      },
+      "config": {
+        "title": "Cinfiguration",
+        "description": {
+          "new_ignored_note": "Ignored users (comma separated), could be empty",
+          "ignored_note": "Ignored users (comma separated), could be empty",
+          "response_text": "Auto-response text",
+          "cooldown_note": "Minimum 1 minut. If 0, then no delay",
+          "max_note": "Minimum 1 msg",
+          "allow_group_chats": "Allow group chats",
+          "allow_channels": "Allow Channels",
+          "allow_bots": "Allow Bots"
+        },
+        "data": {
+          "new_ignored_users": "Ignored users (comma separated)",
+          "ignored_users": "Ignored users (comma separated)",
+          "response_text": "Auto-response text",
+          "cooldown": "Cooldown between responses (minutes)",
+          "max_msgs": "Maximum messages to process at once",
+          "allow_group_chats": "Allow group chats",
+          "allow_channels": "Allow Channels",
+          "allow_bots": "Allow Bots"
+        }
+      },
+      "abort": {
+        "already_configured": "This number is already configured",
+        "flood_wait": "Telegram requires you to wait {wait_time} before trying again."
+      },
+      "error": {
+        "already_configured": "This number alredy added",
+        "invalid_phone_format": "Phone number must start with '+'",
+        "invalid_phone": "Invalid phone number",
+        "phone_not_registered": "Phone number not registered",
+        "phone_banned": "Phone number banned",
+        "invalid_code": "Invalid verification code",
+        "expired_code": "Verification code expired",
+        "invalid_password": "Invalid password",
+        "invalid_auth": "Invalid API credentials",
+        "connection_failed": "Connection failed",
+        "session_save_failed": "Failed to save Telegram session",
+        "client_disconnected": "Telegram client disconnected",
+        "send_code_failed": "Failed to send verification code",
+        "sign_in_failed": "Sign in failed",
+        "unknown": "Unknown error occurred",
+        "flood_wait": "Telegram requires you to wait {wait_time} before trying again",
+        "flood_wait_hours": "Please wait about {hours} hours before trying again",
+        "flood_wait_minutes": "Please wait about {minutes} minutes before trying again",
+        "configuration_updated": "Configuration updated successfully",
+        "min_cooldown": "Incorrect delay value",
+        "min_messages": "Invalid value",
+        "empty_response": "Empty response",
+        "invalid_input": "Invalid input"
+          }
+    },
+    "error": {
+      "already_configured": "This number alredy added",
+      "invalid_phone_format": "Phone number must start with '+'",
+      "invalid_phone": "Invalid phone number",
+      "phone_not_registered": "Phone number not registered",
+      "phone_banned": "Phone number banned",
+      "invalid_code": "Invalid verification code",
+      "expired_code": "Verification code expired",
+      "invalid_password": "Invalid password",
+      "invalid_auth": "Invalid API credentials",
+      "connection_failed": "Connection failed",
+      "session_save_failed": "Failed to save Telegram session",
+      "client_disconnected": "Telegram client disconnected",
+      "send_code_failed": "Failed to send verification code",
+      "sign_in_failed": "Sign in failed",
+      "unknown": "Unknown error occurred",
+      "flood_wait": "Telegram requires you to wait {wait_time} before trying again",
+      "flood_wait_hours": "Please wait about {hours} hours before trying again",
+      "flood_wait_minutes": "Please wait about {minutes} minutes before trying again",
+      "configuration_updated": "Configuration updated successfully",
+      "min_cooldown": "Incorrect delay value",
+      "min_messages": "Invalid value",
+      "empty_response": "Empty response",
+      "invalid_input": "Invalid input"
+    },
+    "abort": {
+      "already_configured": "This Telegram account is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Cinfiguration",
+        "data": {
+          "ignored_users": "Ignored users to be deleted",
+          "new_ignored_users": "Ignored users (comma separated)",
+          "response_text": "Auto-response text",
+          "cooldown": "Cooldown between responses (minutes)",
+          "max_msgs": "Maximum messages to process at once",
+          "allow_group_chats": "Allow group chats",
+          "allow_channels": "Allow Channels",
+          "allow_bots": "Allow Bots"
+        },
+        "description": {
+          "ignored_users": "Ignored users to be deleted",
+          "new_ignored_users": "Ignored users (comma separated)",
+          "response_text": "Auto-response text",
+          "cooldown_note": "Minimum 1 minut. If 0, then no delay",
+          "max_note": "Minimum 1 msg",
+          "allow_group_chats": "Allow group chats",
+          "allow_channels": "Allow Channels",
+          "allow_bots": "Allow Bots"
+        }
+      },
+        "error": {
+          "min_cooldown": "Incorrect delay value",
+          "min_messages": "Invalid value",
+          "empty_response": "Empty response",
+          "invalid_input": "Invalid input"
+          }
+    }
+  },
+  "component": {
+    "telegram_auto_responder": {
+      "state_attributes": {
+        "cooldown_minutes": "Cooldown (minutes)",
+        "max_messages": "Max messages",
+        "response_text": "Response text",
+        "ignored_users": "Ignored users",
+        "phone_number": "Phone number",
+        "status": "Status"
+      }
+    }
+  }
+}
+
