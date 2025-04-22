@@ -1,13 +1,14 @@
 {
   "domain": "telegram_auto_responder",
   "name": "Telegram Auto Responder",
-  "version": "1.4.1",
-  "requirements": ["telethon>=1.28.0", "aiofiles"],
+  "version": "1.5.0",
+  "requirements": ["telethon>=1.28.0", "aiofiles", "aiofiles>=0.8.0"],
   "dependencies": [],
-  "codeowners": ["alexanderznamensky"],
+  "codeowners": ["@alexanderznamensky"],
   "config_flow": true,
   "documentation": "https://github.com/alexanderznamensky/telegram_auto_responder#readme",
   "issue_tracker": "https://github.com/alexanderznamensky/telegram_auto_responder/issues",
   "iot_class": "cloud_push",
-  "loggers": ["telethon"]
+  "loggers": ["telethon"],
+  "translation": true
 }

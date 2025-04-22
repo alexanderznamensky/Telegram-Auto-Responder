@@ -1,6 +1,7 @@
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from .coordinator import TelegramCoordinator
+from .auto_responder import TelegramAutoResponder
 from .const import DOMAIN
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -13,7 +14,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # Create a coordinator
     coordinator = TelegramCoordinator(hass, entry)
     hass.data[DOMAIN][entry.entry_id] = coordinator
-    
+
+    # Create and save an instance
+    responder = TelegramAutoResponder(hass=hass, entry_data=entry.data, config_entry=entry)
+
     # Setup platforms
     await hass.config_entries.async_forward_entry_setups(entry, ["switch"])
     
@@ -24,3 +28,4 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_unload_platforms(entry, ["switch"])
     hass.data[DOMAIN].pop(entry.entry_id)
     return True
+

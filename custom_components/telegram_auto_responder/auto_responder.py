@@ -14,6 +14,9 @@ import asyncio
 from .config_flow import TelegramAuthFlowHandler
 from homeassistant.components.notify import DOMAIN as NOTIFY_DOMAIN
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
+from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers import config_entry_flow
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,7 +27,7 @@ from .const import (
     CONF_ALLOW_GROUP_CHATS,
     CONF_ALLOW_CHANNELS,
     CONF_ALLOW_BOTS,
-    DOMAIN
+    DOMAIN,
 )
 
 class TelegramAutoResponder:
@@ -76,97 +79,60 @@ class TelegramAutoResponder:
 
 
     async def start(self):
-        """Starting the Auto Responder."""
-        if self._client and self._client.is_connected():
-            return
-
+        """Starting the Auto Responder with proper ConfigEntry handling."""
         try:
+            # Checking for the presence of config_entry
+            if not hasattr(self, 'config_entry') or not self.config_entry:
+                # _LOGGER.debug("Searching for matching ConfigEntry...")
+                
+                # Getting all records for our domain
+                entries = self.hass.config_entries.async_entries(DOMAIN)
+                
+                # Search for a record by phone number
+                for entry in entries:
+                    if entry.data.get('phone') == self.entry_data.get('phone'):
+                        self.config_entry = entry
+                        # _LOGGER.debug(f"Found ConfigEntry: {entry.entry_id}")
+                        break
+                
+                if not self.config_entry:
+                    _LOGGER.error(f"No ConfigEntry found for phone: {self.entry_data.get('phone')}")
+                    # _LOGGER.debug("Available entries: %s", [e.data.get('phone') for e in entries])
+                    await self._turn_off_switch()
+                    return False
+
+            # Client initialization
             self._client = TelegramClient(
                 StringSession(self.entry_data['session']),
                 self.entry_data['api_id'],
                 self.entry_data['api_hash']
             )
-
             await self._client.connect()
 
             # Checking authorization
             if not await self._client.is_user_authorized():
-                _LOGGER.warning("Client is not authorized. Trying to sign in...")
+                _LOGGER.warning("Authorization required, initiating reauth...")
 
-                # Receiving the client info for non-authorized user
-                client_info = "Unknown client"
+                # Starting the reauth process
                 try:
-                    if self.entry_data:
-                        client_info = f"Phone: {self.entry_data['phone'] or 'Without number'} (ID: {self.entry_data['api_id']})"
-                except Exception as e:
-                    _LOGGER.warning(f"Failed to retrieve client data: {e}")
-
-# ПЕРЕВОД НУЖЕН
-                # Sending the notification
-                await self.hass.services.async_call(
-                    'persistent_notification',
-                    'create',
-                    {
-                        'title': 'Требуется авторизация Telegram',
-                        'message': f"Автоответчик не может подключиться.\n{client_info}\nПроверьте сессию или войдите заново."
-                    },
-                    blocking=False
+                    result = await self.hass.config_entries.flow.async_init(
+                        DOMAIN,
+                        context={
+                            "source": "reauth",
+                            "entry_id": self.config_entry.entry_id,
+                            "title_placeholders": {
+                                "name": f"Telegram {self.entry_data.get('phone', '')}"
+                            }
+                        },
+                        data=self.config_entry.data
                     )
+                    # _LOGGER.debug(f"Reauth flow started with result: {result}")
+                    return False
+                except Exception as e:
+                    _LOGGER.error(f"Failed to start reauth flow: {e}")
+                    return False
 
-                # turning off switch
-                await self._turn_off_switch()
-
-####################
-# НУЖЕН Reauth через вызов config_flow.py
-
-                # Создаем контекст для reauth
-                # entry_id = getattr(self.config_entry, 'entry_id', 'manual_' + self.entry_data['phone'][-6:])
-                # context={"source": "reauth", "entry_id": entry_id}
-
-                # # context = {
-                # #     "source": "reauth",
-                # #     "unique_id": '123',
-                # #     "entry_id": '456'
-                # # }
-
-                # # for key, value in self.config_entry.items():
-                # #     print(f"{key}: {value}")
-
-                # # Получаем ссылку на flow manager
-                # flow_manager = self.hass.config_entries.flow
-                
-                # # Запускаем reauth flow
-                # await flow_manager.async_init(
-                #     DOMAIN,
-                #     context=context,
-                #     data={
-                #         "phone": self.entry_data['phone'],
-                #         "session": self.entry_data['session'],
-                #         "api_id": self.entry_data['api_id'],
-                #         "api_hash": self.entry_data['api_hash']
-                #     }
-                # )
-
-
-                # await self._client.start(
-                #     phone=lambda: input('Enter your phone: '),
-                #     code_callback=lambda: input('Enter code: '),
-                #     password=lambda: getpass.getpass('Password: ')
-                # )
-
-                # await self.hass.config_entries.flow.async_init(
-                #     DOMAIN,
-                #     context={
-                #         "source": "reauth",
-                #         "entry_id": self.entry_data.entry_id  # Добавляем ID записи конфигурации
-                #     },
-                #     data=self.entry_data
-                # )
-
-
-                return False
-
-            # Sending a message to yourself
+            # Successful authorization
             await self._send_message_to_me("Auto Responder is started!")
 
             @self._client.on(events.NewMessage())
@@ -178,12 +144,12 @@ class TelegramAutoResponder:
 
                     # Skip if it's our own message
                     if event.out:
-                        _LOGGER.debug(f"It's our own message chat_id: {getattr(chat, 'id', 'unknown')}, sender_id: {getattr(sender, 'id', 'unknown')}")
+                        # _LOGGER.debug(f"It's our own message chat_id: {getattr(chat, 'id', 'unknown')}, sender_id: {getattr(sender, 'id', 'unknown')}")
                         return                    
 
                     # Skip if we couldn't get sender info
                     if sender is None:
-                        _LOGGER.debug("🚫 Skipping message with no sender info")
+                        # _LOGGER.debug("🚫 Skipping message with no sender info")
                         return
 
                     # Get and properly format ignored_users
@@ -211,22 +177,18 @@ class TelegramAutoResponder:
 
                     # Apply filters
                     if is_private:
-                        # Personal messages - check the settings for bots
                         if is_bot and not self.entry_data.get(CONF_ALLOW_BOTS, False):
                             _LOGGER.debug(f"🚫 Skipping bot message from {sender.id}")
                             return
                     elif is_megagroup or is_group:
-                        # Group chats (regular and megagroups)
                         if not self.entry_data.get(CONF_ALLOW_GROUP_CHATS, False):
                             _LOGGER.debug(f"🚫 Skipping group chat message from {chat.id}")
                             return
                     elif is_channel:
-                        # Channels (not megagroups)
                         if not self.entry_data.get(CONF_ALLOW_CHANNELS, False):
                             _LOGGER.debug(f"🚫 Skipping channel message from {chat.id}")
                             return
                     else:
-                        # Неизвестный тип чата
                         _LOGGER.debug(f"🚫 Skipping unknown chat type: {type(chat)}")
                         return
 
@@ -322,11 +284,12 @@ class TelegramAutoResponder:
                 except Exception as e:
                     _LOGGER.error(f"❌ Error processing message: {e}", exc_info=True)
 
-            _LOGGER.debug("Telegram Auto Responder started")
+            # _LOGGER.debug("Telegram Auto Responder started")
 
         except Exception as e:
             _LOGGER.error("❌ Failed to start Telegram Auto Responder: %s", e)
-            raise
+            await self._turn_off_switch()
+            return False        
 
 
     async def stop(self):
@@ -354,11 +317,8 @@ class TelegramAutoResponder:
                 _LOGGER.error(f"🔴 Invalid phone format: {self.entry_data.get('phone')}")
                 return False
 
-            # Forming a full entity_id
-            entity_id = f"switch.{DOMAIN}_{phone}"
-            # _LOGGER.debug(f"Trying to turn off switch: {entity_id}")
+            entity_id = f"switch.telegram_{phone}_auto_responder"
 
-            # Turn off switch
             await self.hass.services.async_call(
                 'switch',
                 'turn_off',
@@ -366,9 +326,15 @@ class TelegramAutoResponder:
                 blocking=False
             )
 
-            _LOGGER.debug(f"✉️ Successfully sent turn_off command to switch {entity_id}")
-            return True
-            
+            # Switch status check
+            state = self.hass.states.get(entity_id)
+            if state and state.state == 'off':
+                # _LOGGER.debug(f"✉️ Successfully turned off {entity_id}")
+                return True
+            else:
+                _LOGGER.warning(f"⚠️ Failed to turn off {entity_id}")
+                return False
+
         except Exception as e:
             _LOGGER.error(f"🔴 Error turning off switch: {e}", exc_info=True)
             return False

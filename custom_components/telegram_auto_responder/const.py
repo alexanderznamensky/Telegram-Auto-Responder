@@ -20,3 +20,5 @@ CONF_ALLOW_GROUP_CHATS = "allow_group_chats"
 CONF_ALLOW_CHANNELS = "allow_channels"
 CONF_ALLOW_BOTS = "allow_bots"
 
+MAX_COOLDOWN = 1440
+MAX_MESSAGES = 1000
