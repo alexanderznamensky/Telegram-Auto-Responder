@@ -9,6 +9,7 @@
 ## Installation
 
 1. Add this repository URL as a custom repository in HACS
+
 **Method 1.** [HACS](https://hacs.xyz/) custom repo:
 
 > HACS > Integrations > 3 dots (upper top corner) > Custom repositories > URL: `alexanderznamensky/Telegram-Auto-Responder`, Category: Integration > Add > wait > Telegram-Auto-Responder > Install
