@@ -7,6 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.restore_state import RestoreEntity
 
 from .const import DOMAIN
 from .auto_responder import TelegramAutoResponder
@@ -22,7 +23,7 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([TelegramAutoResponderSwitch(coordinator, entry)])
 
-class TelegramAutoResponderSwitch(CoordinatorEntity, SwitchEntity):
+class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity):
     """Representation of a Telegram Auto Responder switch."""
 
     _attr_has_entity_name = True
@@ -32,11 +33,10 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, SwitchEntity):
         """Initialize the switch."""
         super().__init__(coordinator)
         self._entry = entry
-        # self._attr_name = f"Telegram Auto Responder ({entry.data.get('phone', '')})"
-        self._attr_name = f"Auto Responder"
+        self._attr_name = "Auto Responder"
         self._attr_unique_id = f"{entry.entry_id}_auto_responder_switch"
-        self._attr_is_on = coordinator.auto_responder_enabled
         self._auto_responder = None
+        self._attr_is_on = False
         self._attr_extra_state_attributes = self._build_attributes()
 
     def _build_attributes(self) -> dict:
@@ -63,25 +63,46 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, SwitchEntity):
             "name": f"Telegram {self._entry.data.get('phone', '')}",
             "manufacturer": "Telegram",
             "model": "Auto Responder",
-            "sw_version": "1.4"
+            "sw_version": "1.5"
         }
 
     async def async_added_to_hass(self) -> None:
         """Called when an entity is added to HA."""
         await super().async_added_to_hass()
+        
+        # Restore the previous state
+        if (last_state := await self.async_get_last_state()) is not None:
+            self._attr_is_on = last_state.state == "on"
+            _LOGGER.debug(f"Restored state: {self._attr_is_on}")
+        else:
+            # If there is no saved state, use the value from the coordinator
+            self._attr_is_on = self.coordinator.auto_responder_enabled
+            _LOGGER.debug(f"No saved state, using coordinator state: {self._attr_is_on}")
+        
         self._auto_responder = TelegramAutoResponder(self.hass, self._entry.data)
-        # Subscribe to updates from coordinator
+        
+        # Subscribe to updates from the coordinator
         self.async_on_remove(
             self.coordinator.async_add_listener(self._handle_coordinator_update)
         )
+        
+        # We start or stop the answering machine depending on the state
         if self._attr_is_on:
             await self._auto_responder.start()
+            _LOGGER.debug("Auto responder started on restore")
+        else:
+            await self._auto_responder.stop()
+            _LOGGER.debug("Auto responder stopped on restore")
+            
+        self.async_write_ha_state()
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        self._attr_is_on = self.coordinator.auto_responder_enabled
-        self.async_write_ha_state()
+        # We update the state only if it has not been restored.
+        if not hasattr(self, '_restored') or self._restored is False:
+            self._attr_is_on = self.coordinator.auto_responder_enabled
+            self.async_write_ha_state()
 
     async def async_will_remove_from_hass(self) -> None:
         """Called when an entity is removed from HA."""

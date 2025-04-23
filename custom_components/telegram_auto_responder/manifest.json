@@ -1,7 +1,7 @@
 {
   "domain": "telegram_auto_responder",
   "name": "Telegram Auto Responder",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "requirements": ["telethon>=1.28.0", "aiofiles", "aiofiles>=0.8.0"],
   "dependencies": [],
   "codeowners": ["@alexanderznamensky"],
