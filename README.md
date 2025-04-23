@@ -1,13 +1,20 @@
 # Telegram Auto Responder Integration for Home Assistant 
 
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 
-[integration_librelink]: [https://github.com/gillesvs/librelink](https://github.com/alexanderznamensky/telegram_auto_responder).git
+[Telegram-Auto-Responder]: https://github.com/alexanderznamensky/Telegram-Auto-Responder
 
 **This integration will set up switch for each your own Telegram account.**
 
 ## Installation
 
 1. Add this repository URL as a custom repository in HACS
+**Method 1.** [HACS](https://hacs.xyz/) custom repo:
+
+> HACS > Integrations > 3 dots (upper top corner) > Custom repositories > URL: `alexanderznamensky/Telegram-Auto-Responder`, Category: Integration > Add > wait > Telegram-Auto-Responder > Install
+
+**Method 2.** Manually copy `/Telegram-Auto-Responder` folder from [latest release](https://github.com/alexanderznamensky/Telegram-Auto-Responder) to `/config/custom_components` folder.
+
 2. Restart Home Assistant
 3. In the HA UI go to "Configuration" -> "Integrations" click "+" and search for "Telegram auto responder"
 
