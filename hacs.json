@@ -1,5 +1,5 @@
 {
   "name": "Telegram Auto Responder",
   "render_readme": true,
-  "homeassistant": "2025.4.2"
+  "homeassistant": "2025.1.1"
 }
