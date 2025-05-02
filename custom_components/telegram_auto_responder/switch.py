@@ -37,6 +37,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
         self._attr_unique_id = f"{entry.entry_id}_auto_responder_switch"
         self._auto_responder = None
         self._attr_is_on = False
+        self._restored = False
         self._attr_extra_state_attributes = self._build_attributes()
 
     def _build_attributes(self) -> dict:
@@ -63,7 +64,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
             "name": f"Telegram {self._entry.data.get('phone', '')}",
             "manufacturer": "Telegram",
             "model": "Auto Responder",
-            "sw_version": "1.5"
+            "sw_version": "1.5.1"
         }
 
     async def async_added_to_hass(self) -> None:
@@ -71,13 +72,22 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
         await super().async_added_to_hass()
         
         # Restore the previous state
-        if (last_state := await self.async_get_last_state()) is not None:
-            self._attr_is_on = last_state.state == "on"
-            _LOGGER.debug(f"Restored state: {self._attr_is_on}")
-        else:
-            # If there is no saved state, use the value from the coordinator
-            self._attr_is_on = self.coordinator.auto_responder_enabled
-            _LOGGER.debug(f"No saved state, using coordinator state: {self._attr_is_on}")
+        try:
+            if (last_state := await self.async_get_last_state()) is not None:
+                self._attr_is_on = last_state.state == "on"
+                self._restored = True
+                _LOGGER.debug(f"Restored state: {self._attr_is_on} from last_state")
+            elif (last_switch_data := await self.async_get_last_switch_data()) is not None:
+                self._attr_is_on = last_switch_data.is_on
+                self._restored = True
+                _LOGGER.debug(f"Restored state: {self._attr_is_on} from last_switch_data")
+            else:
+                # If there is no saved state, use the value from the coordinator
+                self._attr_is_on = getattr(self.coordinator, 'auto_responder_enabled', False)
+                _LOGGER.debug(f"No saved state, using coordinator state: {self._attr_is_on}")
+        except Exception as e:
+            _LOGGER.error(f"Error restoring state: {e}")
+            self._attr_is_on = False
         
         self._auto_responder = TelegramAutoResponder(self.hass, self._entry.data)
         
@@ -87,22 +97,26 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
         )
         
         # We start or stop the answering machine depending on the state
-        if self._attr_is_on:
-            await self._auto_responder.start()
-            _LOGGER.debug("Auto responder started on restore")
-        else:
-            await self._auto_responder.stop()
-            _LOGGER.debug("Auto responder stopped on restore")
+        try:
+            if self._attr_is_on:
+                await self._auto_responder.start()
+                _LOGGER.debug("Auto responder started on restore")
+            else:
+                await self._auto_responder.stop()
+                _LOGGER.debug("Auto responder stopped on restore")
+        except Exception as e:
+            _LOGGER.error(f"Error starting/stopping auto responder: {e}")
             
         self.async_write_ha_state()
 
     @callback
     def _handle_coordinator_update(self) -> None:
         """Handle updated data from the coordinator."""
-        # We update the state only if it has not been restored.
-        if not hasattr(self, '_restored') or self._restored is False:
-            self._attr_is_on = self.coordinator.auto_responder_enabled
-            self.async_write_ha_state()
+        if not self._restored:
+            new_state = getattr(self.coordinator, 'auto_responder_enabled', False)
+            if new_state != self._attr_is_on:
+                self._attr_is_on = new_state
+                self.async_write_ha_state()
 
     async def async_will_remove_from_hass(self) -> None:
         """Called when an entity is removed from HA."""
@@ -116,6 +130,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
         if self._auto_responder:
             await self._auto_responder.start()
         self._attr_is_on = True
+        self._restored = False
         self.async_write_ha_state()
 
     async def async_turn_off(self, **kwargs: Any) -> None:
@@ -124,4 +139,5 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
         if self._auto_responder:
             await self._auto_responder.stop()
         self._attr_is_on = False
+        self._restored = False
         self.async_write_ha_state()
