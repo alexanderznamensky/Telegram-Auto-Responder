@@ -64,7 +64,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
             "name": f"Telegram {self._entry.data.get('phone', '')}",
             "manufacturer": "Telegram",
             "model": "Auto Responder",
-            "sw_version": "1.5.1"
+            "sw_version": "1.5.2"
         }
 
     async def async_added_to_hass(self) -> None:
@@ -93,8 +93,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
         
         # Subscribe to updates from the coordinator
         self.async_on_remove(
-            self.coordinator.async_add_listener(self._handle_coordinator_update)
-        )
+            self.coordinator.async_add_listener(self._handle_coordinator_update))
         
         # We start or stop the answering machine depending on the state
         try:
@@ -117,27 +116,41 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
             if new_state != self._attr_is_on:
                 self._attr_is_on = new_state
                 self.async_write_ha_state()
+                _LOGGER.debug(f"State updated from coordinator: {self._attr_is_on}")
 
     async def async_will_remove_from_hass(self) -> None:
         """Called when an entity is removed from HA."""
-        if self._auto_responder:
-            await self._auto_responder.stop()
+        try:
+            if self._auto_responder:
+                await self._auto_responder.stop()
+        except Exception as e:
+            _LOGGER.error(f"Error stopping auto responder: {e}")
         await super().async_will_remove_from_hass()
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turning on the auto responder."""
-        await self.coordinator.async_set_auto_responder(True)
-        if self._auto_responder:
-            await self._auto_responder.start()
-        self._attr_is_on = True
-        self._restored = False
-        self.async_write_ha_state()
+        try:
+            await self.coordinator.async_set_auto_responder(True)
+            if self._auto_responder:
+                await self._auto_responder.start()
+            self._attr_is_on = True
+            self._restored = False  # After manual change, we don't want to restore
+            self.async_write_ha_state()
+            _LOGGER.debug("Switch turned on")
+        except Exception as e:
+            _LOGGER.error(f"Error turning on switch: {e}")
+            raise
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turning off the auto responder."""
-        await self.coordinator.async_set_auto_responder(False)
-        if self._auto_responder:
-            await self._auto_responder.stop()
-        self._attr_is_on = False
-        self._restored = False
-        self.async_write_ha_state()
+        try:
+            await self.coordinator.async_set_auto_responder(False)
+            if self._auto_responder:
+                await self._auto_responder.stop()
+            self._attr_is_on = False
+            self._restored = False  # After manual change, we don't want to restore
+            self.async_write_ha_state()
+            _LOGGER.debug("Switch turned off")
+        except Exception as e:
+            _LOGGER.error(f"Error turning off switch: {e}")
+            raise

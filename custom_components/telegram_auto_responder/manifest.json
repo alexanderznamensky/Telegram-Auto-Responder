@@ -1,7 +1,7 @@
 {
   "domain": "telegram_auto_responder",
   "name": "Telegram Auto Responder",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "homeassistant": "2023.12.4",
   "requirements": ["telethon>=1.28.0", "aiofiles", "aiofiles>=0.8.0"],
   "dependencies": [],
