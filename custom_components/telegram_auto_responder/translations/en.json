@@ -48,7 +48,8 @@
           "max_msgs": "Maximum messages to process at once",
           "allow_group_chats": "Allow group chats",
           "allow_channels": "Allow Channels",
-          "allow_bots": "Allow Bots"
+          "allow_bots": "Allow Bots",
+          "test_message": "Test message"
         }
       }
     },
@@ -107,7 +108,8 @@
             "max_msgs": "Maximum messages to process at once",
             "allow_group_chats": "Allow group chats",
             "allow_channels": "Allow Channels",
-            "allow_bots": "Allow Bots"
+            "allow_bots": "Allow Bots",
+            "test_message": "Test message"
             }
           }
         },
@@ -164,6 +166,13 @@
           },
           "allow_bots": {
             "name": "Allow bots",
+            "state": {
+              "true": "Yes",
+              "false": "No"
+            }
+          },
+          "test_message": {
+            "name": "Test message",
             "state": {
               "true": "Yes",
               "false": "No"

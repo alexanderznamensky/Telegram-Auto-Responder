@@ -53,7 +53,8 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
             "ignored_users": ignored_users_display,
             "allow_group_chats": self._entry.data.get("allow_group_chats", False),
             "allow_channels": self._entry.data.get("allow_channels", False),
-            "allow_bots": self._entry.data.get("allow_bots", False)
+            "allow_bots": self._entry.data.get("allow_bots", False),
+            "test_message": self._entry.data.get("test_message", False),
         }
 
     @property
@@ -64,7 +65,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
             "name": f"Telegram {self._entry.data.get('phone', '')}",
             "manufacturer": "Telegram",
             "model": "Auto Responder",
-            "sw_version": "1.5.2"
+            "sw_version": "1.5.3"
         }
 
     async def async_added_to_hass(self) -> None:
@@ -134,7 +135,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
             if self._auto_responder:
                 await self._auto_responder.start()
             self._attr_is_on = True
-            self._restored = False  # After manual change, we don't want to restore
+            self._restored = False
             self.async_write_ha_state()
             _LOGGER.debug("Switch turned on")
         except Exception as e:
@@ -148,7 +149,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
             if self._auto_responder:
                 await self._auto_responder.stop()
             self._attr_is_on = False
-            self._restored = False  # After manual change, we don't want to restore
+            self._restored = False
             self.async_write_ha_state()
             _LOGGER.debug("Switch turned off")
         except Exception as e:

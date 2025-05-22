@@ -19,6 +19,7 @@ CONF_AUTO_RESPONDER_ENABLED = "auto_responder_enabled"
 CONF_ALLOW_GROUP_CHATS = "allow_group_chats"
 CONF_ALLOW_CHANNELS = "allow_channels"
 CONF_ALLOW_BOTS = "allow_bots"
+CONF_TEST_MESSAGE = "test_message"
 
 MAX_COOLDOWN = 1440
 MAX_MESSAGES = 1000

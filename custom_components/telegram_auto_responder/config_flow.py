@@ -45,6 +45,7 @@ from .const import (
     CONF_ALLOW_BOTS,
     MAX_COOLDOWN,
     MAX_MESSAGES,
+    CONF_TEST_MESSAGE,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -415,7 +416,8 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                                 CONF_MAX_MSGS,
                                 CONF_ALLOW_GROUP_CHATS,
                                 CONF_ALLOW_CHANNELS,
-                                CONF_ALLOW_BOTS
+                                CONF_ALLOW_BOTS,
+                                CONF_TEST_MESSAGE,
                             ]
                         }
                     }
@@ -441,7 +443,8 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             ),
             vol.Optional(CONF_ALLOW_GROUP_CHATS, default=current_values[CONF_ALLOW_GROUP_CHATS]): cv.boolean,
             vol.Optional(CONF_ALLOW_CHANNELS, default=current_values[CONF_ALLOW_CHANNELS]): cv.boolean,
-            vol.Optional(CONF_ALLOW_BOTS, default=current_values[CONF_ALLOW_BOTS]): cv.boolean
+            vol.Optional(CONF_ALLOW_BOTS, default=current_values[CONF_ALLOW_BOTS]): cv.boolean,
+            vol.Optional(CONF_TEST_MESSAGE, default=current_values[CONF_TEST_MESSAGE]): cv.boolean,
         })
 
         return self.async_show_form(
@@ -664,6 +667,9 @@ class TelegramOptionsFlowHandler(config_entries.OptionsFlow):
         self._phone = self._config_entry.data.get(CONF_PHONE, "")
 
         if user_input is not None:
+
+            test_message = user_input.get(CONF_TEST_MESSAGE, False)
+
             try:
 
                 if CONF_IGNORED_USERS in user_input:
@@ -712,7 +718,8 @@ class TelegramOptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_MAX_MSGS: max_msgs,
                         CONF_ALLOW_GROUP_CHATS: allow_group_chats,
                         CONF_ALLOW_CHANNELS: allow_channels,
-                        CONF_ALLOW_BOTS: allow_bots
+                        CONF_ALLOW_BOTS: allow_bots,
+                        CONF_TEST_MESSAGE: test_message
                     }
 
                     # Updating the configuration
@@ -807,6 +814,12 @@ class TelegramOptionsFlowHandler(config_entries.OptionsFlow):
                 description={"suggested_value": current_options.get(CONF_ALLOW_BOTS, 
                                         current_config.get(CONF_ALLOW_BOTS, False)), 
                             "description": "Allow responding to bot messages"}
+            ): cv.boolean,
+            vol.Optional(
+                CONF_TEST_MESSAGE,
+                default=current_options.get(CONF_TEST_MESSAGE, current_config.get(CONF_TEST_MESSAGE, False)),
+                description={"suggested_value": current_options.get(CONF_TEST_MESSAGE, current_config.get(CONF_TEST_MESSAGE, False)),
+                            "description": "Включить тестовое сообщение"}
             ): cv.boolean
         }
 

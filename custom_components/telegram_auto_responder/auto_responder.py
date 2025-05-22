@@ -28,6 +28,7 @@ from .const import (
     CONF_ALLOW_CHANNELS,
     CONF_ALLOW_BOTS,
     DOMAIN,
+    CONF_TEST_MESSAGE,
 )
 
 class TelegramAutoResponder:
@@ -133,7 +134,9 @@ class TelegramAutoResponder:
                     return False
 
             # Successful authorization
-            await self._send_message_to_me("Auto Responder is started!")
+            if self.entry_data.get(CONF_TEST_MESSAGE, False):
+                await self._send_message_to_me("Auto Responder is started!")
+            # await self._send_message_to_me("Auto Responder is started!")
 
             @self._client.on(events.NewMessage())
             async def handler(event):
@@ -297,7 +300,9 @@ class TelegramAutoResponder:
         try:
             # Only try to send message if client is still available
             if self._client and self._client.is_connected():
-                await self._send_message_to_me("Auto Responder is stopped!")
+                if self.entry_data.get(CONF_TEST_MESSAGE, False):
+                    await self._send_message_to_me("Auto Responder is stopped!")
+                # await self._send_message_to_me("Auto Responder is stopped!")
                 await self._save_last_message()
                 await self._client.disconnect()
                 
