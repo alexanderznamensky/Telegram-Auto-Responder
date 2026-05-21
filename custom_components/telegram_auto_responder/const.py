@@ -23,3 +23,14 @@ CONF_TEST_MESSAGE = "test_message"
 
 MAX_COOLDOWN = 1440
 MAX_MESSAGES = 1000
+# Proxy configuration keys
+CONF_PROXY_ENABLED = "proxy_enabled"
+CONF_PROXY_TYPE = "proxy_type"
+CONF_PROXY_HOST = "proxy_host"
+CONF_PROXY_PORT = "proxy_port"
+CONF_PROXY_USERNAME = "proxy_username"
+CONF_PROXY_PASSWORD = "proxy_password"
+
+PROXY_TYPE_SOCKS5 = "socks5"
+PROXY_TYPE_HTTP = "http"
+PROXY_TYPES = [PROXY_TYPE_SOCKS5, PROXY_TYPE_HTTP]

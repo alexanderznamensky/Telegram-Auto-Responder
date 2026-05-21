@@ -1,4 +1,4 @@
-from telethon import TelegramClient, events
+from telethon import TelegramClient, events, connection
 from telethon.tl.types import User, Channel, Chat
 from telethon.tl import types
 from telethon.sessions import StringSession
@@ -12,6 +12,7 @@ from typing import Optional
 import asyncio
 
 from .config_flow import TelegramAuthFlowHandler
+from .helpers import build_telethon_proxy
 from homeassistant.components.notify import DOMAIN as NOTIFY_DOMAIN
 from homeassistant.helpers.entity_registry import async_get as async_get_entity_registry
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -39,7 +40,6 @@ class TelegramAutoResponder:
         self._client: Optional[TelegramClient] = None
         self.last_message = {}
         self.storage_path = os.path.join(hass.config.config_dir, 'telegram_auto_responder.pkl')
-        self.hass.async_add_executor_job(self._load_last_message)
 
 
     async def _load_last_message(self):
@@ -48,8 +48,11 @@ class TelegramAutoResponder:
             async with aiofiles.open(self.storage_path, 'rb') as f:
                 data = await f.read()
                 self.last_message = pickle.loads(data)
-        except (FileNotFoundError, EOFError, pickle.PickleError) as e:
-            _LOGGER.error("Could not load last message timestamp: %s", e)
+        except FileNotFoundError:
+            # First start: there is no saved cooldown state yet.
+            self.last_message = {}
+        except (EOFError, pickle.PickleError) as e:
+            _LOGGER.warning("Could not load last message timestamp: %s", e)
             self.last_message = {}
 
 
@@ -82,6 +85,8 @@ class TelegramAutoResponder:
     async def start(self):
         """Starting the Auto Responder with proper ConfigEntry handling."""
         try:
+            await self._load_last_message()
+
             # Checking for the presence of config_entry
             if not hasattr(self, 'config_entry') or not self.config_entry:
                 # _LOGGER.debug("Searching for matching ConfigEntry...")
@@ -103,10 +108,19 @@ class TelegramAutoResponder:
                     return False
 
             # Client initialization
+            proxy = build_telethon_proxy(self.entry_data)
+            if proxy:
+                _LOGGER.debug("Using Telegram proxy: %s://%s:%s", proxy["proxy_type"], proxy["addr"], proxy["port"])
+
             self._client = TelegramClient(
                 StringSession(self.entry_data['session']),
                 self.entry_data['api_id'],
-                self.entry_data['api_hash']
+                self.entry_data['api_hash'],
+                proxy=proxy,
+                timeout=60,
+                connection=connection.ConnectionTcpObfuscated,
+                connection_retries=3,
+                retry_delay=5
             )
             await self._client.connect()
 

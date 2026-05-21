@@ -12,6 +12,7 @@ class TelegramCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name="Telegram Auto Responder",
+            config_entry=entry,
             update_interval=None,
         )
         self._entry = entry

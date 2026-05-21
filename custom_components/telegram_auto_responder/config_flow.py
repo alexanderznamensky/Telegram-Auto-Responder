@@ -7,7 +7,7 @@ import time
 from datetime import datetime, timedelta
 from telethon.errors.rpcerrorlist import ApiIdInvalidError
 from telethon.errors.rpcerrorlist import FloodWaitError
-from telethon import TelegramClient
+from telethon import TelegramClient, connection
 from telethon.sessions import StringSession
 from telethon.errors import (
     SessionPasswordNeededError,
@@ -18,6 +18,8 @@ from telethon.errors import (
     FloodWaitError,
 )
 import asyncio
+
+from .helpers import build_telethon_proxy
 
 from homeassistant import config_entries
 from homeassistant.core import callback
@@ -46,6 +48,14 @@ from .const import (
     MAX_COOLDOWN,
     MAX_MESSAGES,
     CONF_TEST_MESSAGE,
+    CONF_PROXY_ENABLED,
+    CONF_PROXY_TYPE,
+    CONF_PROXY_HOST,
+    CONF_PROXY_PORT,
+    CONF_PROXY_USERNAME,
+    CONF_PROXY_PASSWORD,
+    PROXY_TYPE_SOCKS5,
+    PROXY_TYPES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -69,6 +79,12 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         self._request_code_time = None
         self._last_flood_wait = None
         self._session_string = None
+        self._proxy_enabled = False
+        self._proxy_type = PROXY_TYPE_SOCKS5
+        self._proxy_host = ""
+        self._proxy_port = None
+        self._proxy_username = ""
+        self._proxy_password = ""
 
 
     @callback
@@ -80,6 +96,47 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 description_placeholders=description_placeholders
             )
         return self.async_abort(reason=reason)
+
+
+    def _flow_proxy_data(self) -> dict[str, Any]:
+        """Return proxy data collected in the current config flow."""
+        return {
+            CONF_PROXY_ENABLED: self._proxy_enabled,
+            CONF_PROXY_TYPE: self._proxy_type,
+            CONF_PROXY_HOST: self._proxy_host,
+            CONF_PROXY_PORT: self._proxy_port,
+            CONF_PROXY_USERNAME: self._proxy_username,
+            CONF_PROXY_PASSWORD: self._proxy_password,
+        }
+
+
+    def _store_proxy_input(self, user_input: dict[str, Any]) -> None:
+        """Store proxy values from a config/options form."""
+        self._proxy_enabled = bool(user_input.get(CONF_PROXY_ENABLED, False))
+        self._proxy_type = str(user_input.get(CONF_PROXY_TYPE) or PROXY_TYPE_SOCKS5).lower()
+        self._proxy_host = str(user_input.get(CONF_PROXY_HOST) or "").strip()
+        self._proxy_port = user_input.get(CONF_PROXY_PORT)
+        self._proxy_username = str(user_input.get(CONF_PROXY_USERNAME) or "").strip()
+        self._proxy_password = str(user_input.get(CONF_PROXY_PASSWORD) or "").strip()
+
+
+    def _validate_proxy_input(self, errors: dict[str, str]) -> None:
+        """Validate proxy values collected in the current config flow."""
+        if not self._proxy_enabled:
+            return
+
+        if self._proxy_type not in PROXY_TYPES:
+            errors[CONF_PROXY_TYPE] = "invalid_proxy_type"
+
+        if not self._proxy_host:
+            errors[CONF_PROXY_HOST] = "proxy_host_required"
+
+        try:
+            port = int(self._proxy_port)
+            if not 1 <= port <= 65535:
+                errors[CONF_PROXY_PORT] = "invalid_proxy_port"
+        except (TypeError, ValueError):
+            errors[CONF_PROXY_PORT] = "invalid_proxy_port"
 
 
     async def _disconnect_client(self):
@@ -101,10 +158,19 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                     _LOGGER.error("API credentials not set")
                     return False
                 
+                proxy = build_telethon_proxy(self._flow_proxy_data())
+                if proxy:
+                    _LOGGER.debug("Using Telegram proxy during config flow: %s://%s:%s", proxy["proxy_type"], proxy["addr"], proxy["port"])
+
                 self._client = TelegramClient(
                     StringSession(),
                     int(self._api_id),
-                    self._api_hash
+                    self._api_hash,
+                    proxy=proxy,
+                    timeout=60,
+                    connection=connection.ConnectionTcpObfuscated,
+                    connection_retries=3,
+                    retry_delay=5
                 )
             
             if not self._client.is_connected():
@@ -162,6 +228,8 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 try:
                     self._api_id = int(user_input[CONF_API_ID])
                     self._api_hash = user_input[CONF_API_HASH].strip()
+                    self._store_proxy_input(user_input)
+                    self._validate_proxy_input(errors)
                     
                     # Checking the uniqueness of the combination api_id + phone
                     existing_entries = self._async_current_entries()
@@ -172,10 +240,19 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                             break
                     
                     if not errors:
+                        proxy = build_telethon_proxy(self._flow_proxy_data())
+                        if proxy:
+                            _LOGGER.debug("Using Telegram proxy during API credential check: %s://%s:%s", proxy["proxy_type"], proxy["addr"], proxy["port"])
+
                         self._client = TelegramClient(
                             StringSession(),
                             self._api_id,
-                            self._api_hash
+                            self._api_hash,
+                            proxy=proxy,
+                            timeout=60,
+                            connection=connection.ConnectionTcpObfuscated,
+                            connection_retries=3,
+                            retry_delay=5
                         )
                         try:
                             await self._client.connect()
@@ -200,7 +277,13 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="user",
             data_schema=vol.Schema({
                 vol.Required(CONF_API_ID): cv.string,
-                vol.Required(CONF_API_HASH): cv.string
+                vol.Required(CONF_API_HASH): cv.string,
+                vol.Optional(CONF_PROXY_ENABLED, default=False): cv.boolean,
+                vol.Optional(CONF_PROXY_TYPE, default=PROXY_TYPE_SOCKS5): vol.In(PROXY_TYPES),
+                vol.Optional(CONF_PROXY_HOST, default=""): cv.string,
+                vol.Optional(CONF_PROXY_PORT): vol.Any(None, vol.Coerce(int)),
+                vol.Optional(CONF_PROXY_USERNAME, default=""): cv.string,
+                vol.Optional(CONF_PROXY_PASSWORD, default=""): cv.string,
             }),
             errors=errors
         )
@@ -375,7 +458,8 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_MAX_MSGS: 1,
             CONF_ALLOW_GROUP_CHATS: False,
             CONF_ALLOW_CHANNELS: False,
-            CONF_ALLOW_BOTS: False
+            CONF_ALLOW_BOTS: False,
+            CONF_TEST_MESSAGE: False,
         }
 
         # If there is an existing configuration, use its values
@@ -407,6 +491,7 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_API_HASH: self._api_hash,
                         CONF_SESSION: self._session_string,
                         CONF_PHONE: self._phone,
+                        **self._flow_proxy_data(),
                         **{
                             k: user_input.get(k, defaults[k])
                             for k in [
@@ -508,10 +593,19 @@ class TelegramAuthFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
         if not all(field in self.entry.data for field in required):
             raise Exception("Incomplete credentials")
         
+        proxy = build_telethon_proxy(self.entry.data)
+        if proxy:
+            _LOGGER.debug("Using Telegram proxy during reauth: %s://%s:%s", proxy["proxy_type"], proxy["addr"], proxy["port"])
+
         self._client = TelegramClient(
             StringSession(self.entry.data['session']),
             self.entry.data['api_id'],
-            self.entry.data['api_hash']
+            self.entry.data['api_hash'],
+            proxy=proxy,
+            timeout=60,
+            connection=connection.ConnectionTcpObfuscated,
+            connection_retries=3,
+            retry_delay=5
         )
         await self._client.connect()
 
@@ -695,6 +789,12 @@ class TelegramOptionsFlowHandler(config_entries.OptionsFlow):
                 allow_group_chats = user_input.get(CONF_ALLOW_GROUP_CHATS, False)
                 allow_channels = user_input.get(CONF_ALLOW_CHANNELS, False)
                 allow_bots = user_input.get(CONF_ALLOW_BOTS, False)
+                proxy_enabled = bool(user_input.get(CONF_PROXY_ENABLED, False))
+                proxy_type = str(user_input.get(CONF_PROXY_TYPE) or PROXY_TYPE_SOCKS5).lower()
+                proxy_host = str(user_input.get(CONF_PROXY_HOST) or "").strip()
+                proxy_port = user_input.get(CONF_PROXY_PORT)
+                proxy_username = str(user_input.get(CONF_PROXY_USERNAME) or "").strip()
+                proxy_password = str(user_input.get(CONF_PROXY_PASSWORD) or "").strip()
 
                 # Validity check
                 if not 0 <= cooldown <= MAX_COOLDOWN:
@@ -707,6 +807,19 @@ class TelegramOptionsFlowHandler(config_entries.OptionsFlow):
                     errors["max_msgs_max"] = str(MAX_MESSAGES)
                 if not response_text:
                     errors[CONF_RESPONSE_TEXT] = "empty_response"
+                if proxy_enabled:
+                    if proxy_type not in PROXY_TYPES:
+                        errors[CONF_PROXY_TYPE] = "invalid_proxy_type"
+                    if not proxy_host:
+                        errors[CONF_PROXY_HOST] = "proxy_host_required"
+                    try:
+                        proxy_port_int = int(proxy_port)
+                        if not 1 <= proxy_port_int <= 65535:
+                            errors[CONF_PROXY_PORT] = "invalid_proxy_port"
+                    except (TypeError, ValueError):
+                        errors[CONF_PROXY_PORT] = "invalid_proxy_port"
+                else:
+                    proxy_port_int = None
 
                 if not errors:
                     # Data for saving
@@ -719,7 +832,13 @@ class TelegramOptionsFlowHandler(config_entries.OptionsFlow):
                         CONF_ALLOW_GROUP_CHATS: allow_group_chats,
                         CONF_ALLOW_CHANNELS: allow_channels,
                         CONF_ALLOW_BOTS: allow_bots,
-                        CONF_TEST_MESSAGE: test_message
+                        CONF_TEST_MESSAGE: test_message,
+                        CONF_PROXY_ENABLED: proxy_enabled,
+                        CONF_PROXY_TYPE: proxy_type,
+                        CONF_PROXY_HOST: proxy_host,
+                        CONF_PROXY_PORT: proxy_port_int if proxy_enabled else None,
+                        CONF_PROXY_USERNAME: proxy_username,
+                        CONF_PROXY_PASSWORD: proxy_password,
                     }
 
                     # Updating the configuration
@@ -820,7 +939,37 @@ class TelegramOptionsFlowHandler(config_entries.OptionsFlow):
                 default=current_options.get(CONF_TEST_MESSAGE, current_config.get(CONF_TEST_MESSAGE, False)),
                 description={"suggested_value": current_options.get(CONF_TEST_MESSAGE, current_config.get(CONF_TEST_MESSAGE, False)),
                             "description": "Включить тестовое сообщение"}
-            ): cv.boolean
+            ): cv.boolean,
+            vol.Optional(
+                CONF_PROXY_ENABLED,
+                default=current_options.get(CONF_PROXY_ENABLED, current_config.get(CONF_PROXY_ENABLED, False)),
+                description={"description": "Use SOCKS5/HTTP proxy for Telegram connection"}
+            ): cv.boolean,
+            vol.Optional(
+                CONF_PROXY_TYPE,
+                default=current_options.get(CONF_PROXY_TYPE, current_config.get(CONF_PROXY_TYPE, PROXY_TYPE_SOCKS5)),
+                description={"description": "Proxy type"}
+            ): vol.In(PROXY_TYPES),
+            vol.Optional(
+                CONF_PROXY_HOST,
+                default=current_options.get(CONF_PROXY_HOST, current_config.get(CONF_PROXY_HOST, "")),
+                description={"description": "Proxy host/IP"}
+            ): cv.string,
+            vol.Optional(
+                CONF_PROXY_PORT,
+                default=current_options.get(CONF_PROXY_PORT, current_config.get(CONF_PROXY_PORT, None)),
+                description={"description": "Proxy port"}
+            ): vol.Any(None, vol.Coerce(int)),
+            vol.Optional(
+                CONF_PROXY_USERNAME,
+                default=current_options.get(CONF_PROXY_USERNAME, current_config.get(CONF_PROXY_USERNAME, "")),
+                description={"description": "Proxy username, if required"}
+            ): cv.string,
+            vol.Optional(
+                CONF_PROXY_PASSWORD,
+                default=current_options.get(CONF_PROXY_PASSWORD, current_config.get(CONF_PROXY_PASSWORD, "")),
+                description={"description": "Proxy password, if required"}
+            ): cv.string
         }
 
         return self.async_show_form(

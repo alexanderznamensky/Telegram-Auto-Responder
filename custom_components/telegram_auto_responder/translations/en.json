@@ -3,137 +3,201 @@
   "config": {
     "step": {
       "user": {
-        "title": "Telegram API Credentials",
-        "description": "Enter your Telegram API ID and API Hash",
+        "title": "Telegram API credentials",
+        "description": "Enter your Telegram API ID and API Hash. If Telegram is blocked or unstable on this network, enable a proxy connection.",
         "data": {
           "api_id": "API ID",
-          "api_hash": "API Hash"
+          "api_hash": "API Hash",
+          "proxy_enabled": "Use proxy",
+          "proxy_type": "Proxy type",
+          "proxy_host": "Proxy host or IP address",
+          "proxy_port": "Proxy port",
+          "proxy_username": "Proxy username",
+          "proxy_password": "Proxy password"
+        },
+        "data_description": {
+          "api_id": "Numeric API ID from my.telegram.org.",
+          "api_hash": "API Hash from my.telegram.org.",
+          "proxy_enabled": "Connect to Telegram through a SOCKS5 or HTTP proxy.",
+          "proxy_type": "Select the proxy protocol.",
+          "proxy_host": "Hostname or IP address of the proxy server.",
+          "proxy_port": "Proxy port, from 1 to 65535.",
+          "proxy_username": "Optional. Fill in only if your proxy requires authentication.",
+          "proxy_password": "Optional. Fill in only if your proxy requires authentication."
         }
       },
       "phone": {
-        "title": "Phone Number",
-        "description": "Enter your phone number in international format",
+        "title": "Phone number",
+        "description": "Enter your phone number in international format.",
         "data": {
-          "phone": "Phone (e.g. +1234567890)"
+          "phone": "Phone number, for example +1234567890"
         }
       },
       "code": {
-        "title": "Verification Code",
-        "description": "Enter the code sent to {phone}",
+        "title": "Verification code",
+        "description": "Enter the code sent to {phone}.",
         "data": {
           "code": "Verification code"
         }
       },
       "password": {
-        "title": "Two-Step Verification",
-        "description": "Enter your two-step verification password",
+        "title": "Two-step verification",
+        "description": "Enter your Telegram two-step verification password.",
         "data": {
           "password": "Password"
         }
       },
       "enter_code": {
-        "title": "Auto Responder {phone}",
-        "description": "Re-authentication for {phone}",
+        "title": "Re-authentication for {phone}",
+        "description": "Enter the verification code sent to {phone}.",
         "data": {
-          "code": "Verification Code"
+          "code": "Verification code"
         }
       },
       "config": {
-        "title": "Cinfiguration",
+        "title": "Configuration",
+        "description": "Configure the automatic response and message filters.",
         "data": {
-          "new_ignored_users": "Ignored users (comma separated)",
-          "ignored_users": "Ignored users (comma separated)",
+          "ignored_users": "Ignored users",
           "response_text": "Auto-response text",
-          "cooldown": "Cooldown between responses (minutes)",
-          "max_msgs": "Maximum messages to process at once",
-          "allow_group_chats": "Allow group chats",
-          "allow_channels": "Allow Channels",
-          "allow_bots": "Allow Bots",
-          "test_message": "Test message"
+          "cooldown": "Cooldown between responses, minutes",
+          "max_msgs": "Maximum responses during cooldown",
+          "allow_group_chats": "Respond in group chats",
+          "allow_channels": "Respond in channels",
+          "allow_bots": "Respond to bots",
+          "test_message": "Send test messages to myself"
+        },
+        "data_description": {
+          "ignored_users": "Comma-separated Telegram user IDs or usernames to ignore.",
+          "response_text": "Message that will be sent automatically.",
+          "cooldown": "Time window in minutes for limiting repeated responses. Use 0 to disable the cooldown window.",
+          "max_msgs": "Maximum number of automatic responses allowed within the cooldown window.",
+          "allow_group_chats": "Allow the auto-responder to reply in groups and megagroups.",
+          "allow_channels": "Allow the auto-responder to reply in channels when permissions allow it.",
+          "allow_bots": "Allow replies to messages from bot accounts.",
+          "test_message": "Send a message to Saved Messages when the auto-responder starts or stops."
         }
+      },
+      "abort": {
+        "title": "Configuration aborted",
+        "description": "The configuration flow was stopped."
       }
     },
     "error": {
       "invalid_api_id": "Invalid API ID format",
-      "invalid_auth": "Invalid API credentials",
-      "connection_failed": "Connection to Telegram failed",
-      "invalid_phone_format": "Phone must start with '+'",
+      "invalid_auth": "Invalid Telegram API credentials",
+      "connection_failed": "Could not connect to Telegram",
+      "invalid_phone_format": "Phone number must start with '+'",
       "invalid_phone": "Invalid phone number",
-      "send_code_failed": "Failed to send verification code",
+      "send_code_failed": "Failed to send the verification code",
       "invalid_code": "Invalid verification code",
       "expired_code": "Verification code expired",
-      "sign_in_failed": "Sign in failed",
-      "invalid_password": "Invalid 2FA password",
-      "session_save_failed": "Failed to save session",
-      "session_missing": "Session data missing",
-      "already_configured": "Account already configured",
+      "sign_in_failed": "Sign-in failed",
+      "invalid_password": "Invalid two-step verification password",
+      "session_save_failed": "Failed to save the Telegram session",
+      "session_missing": "Telegram session data is missing",
+      "already_configured": "This account is already configured",
       "unknown": "Unknown error occurred",
       "flood_wait": "Too many attempts. Please wait {wait_time}",
-      "min_cooldown": "Cooldown must be at least 0",
-      "max_cooldown": "Maximum delay - 1440 minutes (24 hours)",
-      "min_messages": "At least 1 message required",
-      "max_messages": "Maximum 1000 messages per user",
+      "invalid_cooldown": "Cooldown must be between 0 and 1440 minutes",
+      "invalid_max_messages": "Maximum responses must be between 1 and 1000",
+      "min_cooldown": "Cooldown must be at least 0 minutes",
+      "max_cooldown": "Maximum cooldown is 1440 minutes, or 24 hours",
+      "min_messages": "At least 1 message is required",
+      "max_messages": "Maximum is 1000 messages per user",
       "empty_response": "Response text cannot be empty",
       "invalid_input": "Invalid input",
       "value_too_low": "The value must be no less than {min_value}",
       "value_too_high": "The value must be no more than {max_value}",
-      "value_out_of_range": "The value must be between {min_value} and {max_value}",
+      "value_out_of_range": "The value is outside the allowed range",
       "invalid_integer": "Enter an integer",
-      "integer_too_large": "Number too large (max {max_value})",
+      "integer_too_large": "Number is too large, maximum is {max_value}",
       "auth_error": "Authentication error",
-      "reauth_in_progress": "Повторная авторизация уже выполняется",
-      "no_such_entry": "Конфигурация не найдена",
-      "invalid_config": "Неверная конфигурация",
-      "init_failed": "Ошибка инициализации"
+      "reauth_in_progress": "Re-authentication is already in progress",
+      "no_such_entry": "Configuration entry not found",
+      "invalid_config": "Invalid configuration",
+      "init_failed": "Initialization failed",
+      "invalid_proxy_type": "Invalid proxy type",
+      "proxy_host_required": "Proxy host is required when proxy is enabled",
+      "invalid_proxy_port": "Proxy port must be an integer from 1 to 65535"
     },
     "abort": {
       "already_configured": "This account is already configured",
       "no_such_entry": "Configuration entry not found",
-      "reauth_successful": "Re-authentication successful",
+      "reauth_successful": "Re-authentication completed successfully",
+      "reauth_failed": "Re-authentication failed",
+      "reauth_in_progress": "Re-authentication is already in progress",
       "flood_wait": "Too many attempts. Please wait {wait_time}",
       "invalid_code": "Invalid verification code",
+      "invalid_config": "Invalid configuration",
       "init_failed": "Initialization failed"
     }
   },
-    "options": {
-      "step": {
-        "init": {
-          "title": "Auto-responder Settings {phone}",
-          "description": "Update your auto-responder settings for {phone}",
-          "data": {
-            "ignored_users": "Ignored users to be deleted",
-            "new_ignored_users": "Ignored users (comma separated)",
-            "response_text": "Auto-response text",
-            "cooldown": "Cooldown between responses (minutes)",
-            "max_msgs": "Maximum messages to process at once",
-            "allow_group_chats": "Allow group chats",
-            "allow_channels": "Allow Channels",
-            "allow_bots": "Allow Bots",
-            "test_message": "Test message"
-            }
-          }
+  "options": {
+    "step": {
+      "init": {
+        "title": "Auto-responder settings for {phone}",
+        "description": "Update the automatic response, filters, limits, and Telegram proxy settings for {phone}.",
+        "data": {
+          "ignored_users": "Current ignored users",
+          "new_ignored_users": "Add ignored users",
+          "response_text": "Auto-response text",
+          "cooldown": "Cooldown between responses, minutes",
+          "max_msgs": "Maximum responses during cooldown",
+          "allow_group_chats": "Respond in group chats",
+          "allow_channels": "Respond in channels",
+          "allow_bots": "Respond to bots",
+          "test_message": "Send test messages to myself",
+          "proxy_enabled": "Use proxy",
+          "proxy_type": "Proxy type",
+          "proxy_host": "Proxy host or IP address",
+          "proxy_port": "Proxy port",
+          "proxy_username": "Proxy username",
+          "proxy_password": "Proxy password"
         },
-        "error": {
-          "min_cooldown": "Incorrect delay value",
-          "max_cooldown": "Maximum delay - 1440 minutes (24 hours)",
-          "min_messages": "Invalid value",
-          "max_messages": "Maximum 1000 messages per user",
-          "empty_response": "Empty response",
-          "invalid_input": "Invalid input",
-          "value_too_low": "The value must be no less than {min_value}",
-          "value_too_high": "The value must be no more than {max_value}",
-          "value_out_of_range": "The value must be between {min_value} and {max_value}",
-          "invalid_integer": "Enter an integer",
-          "integer_too_large": "Number too large (max {max_value})"
+        "data_description": {
+          "ignored_users": "Select existing users that should remain ignored.",
+          "new_ignored_users": "Comma-separated Telegram user IDs or usernames to add to the ignore list.",
+          "response_text": "Message that will be sent automatically.",
+          "cooldown": "Time window in minutes for limiting repeated responses. Use 0 to disable the cooldown window.",
+          "max_msgs": "Maximum number of automatic responses allowed within the cooldown window.",
+          "allow_group_chats": "Allow the auto-responder to reply in groups and megagroups.",
+          "allow_channels": "Allow the auto-responder to reply in channels when permissions allow it.",
+          "allow_bots": "Allow replies to messages from bot accounts.",
+          "test_message": "Send a message to Saved Messages when the auto-responder starts or stops.",
+          "proxy_enabled": "Connect to Telegram through a SOCKS5 or HTTP proxy.",
+          "proxy_type": "Select the proxy protocol.",
+          "proxy_host": "Hostname or IP address of the proxy server.",
+          "proxy_port": "Proxy port, from 1 to 65535.",
+          "proxy_username": "Optional. Fill in only if your proxy requires authentication.",
+          "proxy_password": "Optional. Fill in only if your proxy requires authentication."
         }
+      }
+    },
+    "error": {
+      "min_cooldown": "Cooldown must be at least 0 minutes",
+      "max_cooldown": "Maximum cooldown is 1440 minutes, or 24 hours",
+      "min_messages": "At least 1 message is required",
+      "max_messages": "Maximum is 1000 messages per user",
+      "empty_response": "Response text cannot be empty",
+      "invalid_input": "Invalid input",
+      "value_too_low": "The value must be no less than {min_value}",
+      "value_too_high": "The value must be no more than {max_value}",
+      "value_out_of_range": "The value is outside the allowed range",
+      "invalid_integer": "Enter an integer",
+      "integer_too_large": "Number is too large, maximum is {max_value}",
+      "invalid_proxy_type": "Invalid proxy type",
+      "proxy_host_required": "Proxy host is required when proxy is enabled",
+      "invalid_proxy_port": "Proxy port must be an integer from 1 to 65535"
+    }
   },
   "entity": {
     "switch": {
       "telegram_auto_responder": {
-        "name": "Telegram Auto Responder",
+        "name": "Auto Responder",
         "state_attributes": {
           "cooldown_minutes": {
-            "name": "Cooldown (min.)"
+            "name": "Cooldown, minutes"
           },
           "max_messages": {
             "name": "Max messages"
@@ -151,21 +215,21 @@
             "name": "Phone number"
           },
           "allow_group_chats": {
-            "name": "Allow group chats",
+            "name": "Respond in group chats",
             "state": {
               "true": "Yes",
               "false": "No"
             }
           },
           "allow_channels": {
-            "name": "Allow channels",
+            "name": "Respond in channels",
             "state": {
               "true": "Yes",
               "false": "No"
             }
           },
           "allow_bots": {
-            "name": "Allow bots",
+            "name": "Respond to bots",
             "state": {
               "true": "Yes",
               "false": "No"
@@ -183,7 +247,7 @@
     }
   },
   "states": {
-    "on": "Yes",
-    "off": "No"
+    "on": "On",
+    "off": "Off"
   }
 }
