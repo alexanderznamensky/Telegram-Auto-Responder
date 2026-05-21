@@ -65,7 +65,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
             "name": f"Telegram {self._entry.data.get('phone', '')}",
             "manufacturer": "Telegram",
             "model": "Auto Responder",
-            "sw_version": "1.5.3"
+            "sw_version": "1.5.4"
         }
 
     async def async_added_to_hass(self) -> None:

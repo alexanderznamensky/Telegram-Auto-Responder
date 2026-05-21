@@ -1,7 +1,7 @@
 {
   "domain": "telegram_auto_responder",
   "name": "Telegram Auto Responder",
-  "version": "1.5.5-proxy-fix",
+  "version": "1.5.4",
   "homeassistant": "2023.12.4",
   "requirements": [
     "telethon>=1.28.0",
