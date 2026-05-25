@@ -38,6 +38,7 @@ class TelegramAutoResponder:
         self.entry_data = entry_data
         self.config_entry = config_entry
         self._client: Optional[TelegramClient] = None
+        self._is_running = False
         self.last_message = {}
         self.storage_path = os.path.join(hass.config.config_dir, 'telegram_auto_responder.pkl')
 
@@ -82,9 +83,48 @@ class TelegramAutoResponder:
         return False
 
 
+    def _get_switch_entity_id(self) -> Optional[str]:
+        """Return the actual switch entity_id from the entity registry."""
+        try:
+            if self.config_entry:
+                entity_registry = async_get_entity_registry(self.hass)
+                entity_id = entity_registry.async_get_entity_id(
+                    "switch",
+                    DOMAIN,
+                    f"{self.config_entry.entry_id}_auto_responder_switch",
+                )
+                if entity_id:
+                    return entity_id
+
+            phone = self.entry_data.get('phone', '').lstrip('+')[-11:]
+            if phone:
+                return f"switch.telegram_{phone}_auto_responder"
+        except Exception as e:
+            _LOGGER.debug("Could not resolve auto responder switch entity_id: %s", e)
+        return None
+
+
+    def _is_switch_on(self) -> bool:
+        """Check the live Home Assistant switch state before sending a reply."""
+        entity_id = self._get_switch_entity_id()
+        if not entity_id:
+            return self._is_running
+
+        state = self.hass.states.get(entity_id)
+        return state is not None and state.state == "on"
+
+
+    async def _should_respond(self) -> bool:
+        """Return True only while the responder is running and the HA switch is on."""
+        return self._is_running and self._is_switch_on()
+
+
     async def start(self):
         """Starting the Auto Responder with proper ConfigEntry handling."""
         try:
+            if self._client is not None:
+                await self.stop()
+
             await self._load_last_message()
 
             # Checking for the presence of config_entry
@@ -148,6 +188,8 @@ class TelegramAutoResponder:
                     return False
 
             # Successful authorization
+            self._is_running = True
+
             if self.entry_data.get(CONF_TEST_MESSAGE, False):
                 await self._send_message_to_me("Auto Responder is started!")
             # await self._send_message_to_me("Auto Responder is started!")
@@ -156,6 +198,9 @@ class TelegramAutoResponder:
             async def handler(event):
 
                 try:
+                    if not await self._should_respond():
+                        return
+
                     chat = await event.get_chat()
                     sender = await event.get_sender()
 
@@ -264,6 +309,9 @@ class TelegramAutoResponder:
                         await self._save_last_message()
 
                     # All checks passed - send response
+                    if not await self._should_respond():
+                        return
+
                     response_text = self.entry_data.get('response_text', '')
                     if response_text:
                         try:
@@ -312,6 +360,8 @@ class TelegramAutoResponder:
     async def stop(self):
         """Stopping the Auto Responder."""
         try:
+            self._is_running = False
+
             # Only try to send message if client is still available
             if self._client and self._client.is_connected():
                 if self.entry_data.get(CONF_TEST_MESSAGE, False):

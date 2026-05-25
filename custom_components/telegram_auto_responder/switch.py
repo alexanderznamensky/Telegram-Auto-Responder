@@ -90,7 +90,7 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
             _LOGGER.error(f"Error restoring state: {e}")
             self._attr_is_on = False
         
-        self._auto_responder = TelegramAutoResponder(self.hass, self._entry.data)
+        self._auto_responder = TelegramAutoResponder(self.hass, self._entry.data, self._entry)
         
         # Subscribe to updates from the coordinator
         self.async_on_remove(
@@ -131,12 +131,12 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turning on the auto responder."""
         try:
-            await self.coordinator.async_set_auto_responder(True)
-            if self._auto_responder:
-                await self._auto_responder.start()
             self._attr_is_on = True
             self._restored = False
             self.async_write_ha_state()
+            await self.coordinator.async_set_auto_responder(True)
+            if self._auto_responder:
+                await self._auto_responder.start()
             _LOGGER.debug("Switch turned on")
         except Exception as e:
             _LOGGER.error(f"Error turning on switch: {e}")
@@ -145,12 +145,12 @@ class TelegramAutoResponderSwitch(CoordinatorEntity, RestoreEntity, SwitchEntity
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turning off the auto responder."""
         try:
-            await self.coordinator.async_set_auto_responder(False)
-            if self._auto_responder:
-                await self._auto_responder.stop()
             self._attr_is_on = False
             self._restored = False
             self.async_write_ha_state()
+            await self.coordinator.async_set_auto_responder(False)
+            if self._auto_responder:
+                await self._auto_responder.stop()
             _LOGGER.debug("Switch turned off")
         except Exception as e:
             _LOGGER.error(f"Error turning off switch: {e}")
